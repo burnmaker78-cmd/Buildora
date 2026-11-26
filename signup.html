@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign up - Buildora</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><a class="logo" href="index.html">Buildora</a><nav id="nav"></nav></header>
+<div class="panel">
+  <h1>Make an account</h1>
+  <label for="user">Username (don’t use your real name)</label><input id="user" maxlength="20" autocomplete="nickname">
+  <label for="email">Email</label><input id="email" type="email" autocomplete="email">
+  <label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="new-password">
+  <p class="err" id="err" role="alert"></p>
+  <button class="main" id="go">Sign up</button>
+  <p class="or">or</p>
+  <button class="google" id="g">Continue with Google</button>
+  <p class="or">Have an account? <a href="login.html">Log in</a></p>
+</div>
+<script type="module">
+import { auth, db, createUserWithEmailAndPassword, updateProfile, doc, setDoc, googleLogin, initHeader, friendly, DEFAULT_AVATAR } from "./app.js";
+initHeader();
+const err = document.getElementById("err");
+document.getElementById("go").onclick = async () => {
+  err.textContent = "";
+  const name = user.value.trim();
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) { err.textContent = "Username: 3 to 20 letters, numbers or underscores."; return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email.value.trim(), pw.value);
+    await updateProfile(cred.user, { displayName: name });
+    await setDoc(doc(db, "users", cred.user.uid), { username: name, avatar: DEFAULT_AVATAR });
+    location.href = "avatar.html";
+  } catch (e) { err.textContent = friendly(e); }
+};
+document.getElementById("g").onclick = async () => {
+  err.textContent = "";
+  try { await googleLogin(); location.href = "avatar.html"; } catch (e) { err.textContent = friendly(e); }
+};
+</script>
+</body>
+</html>

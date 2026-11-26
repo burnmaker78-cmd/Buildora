@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in - Buildora</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><a class="logo" href="index.html">Buildora</a><nav id="nav"></nav></header>
+<div class="panel">
+  <h1>Log in</h1>
+  <label for="email">Email</label><input id="email" type="email" autocomplete="email">
+  <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+  <p class="err" id="err" role="alert"></p>
+  <button class="main" id="go">Log in</button>
+  <p class="or">or</p>
+  <button class="google" id="g">Continue with Google</button>
+  <p class="or">New here? <a href="signup.html">Make an account</a></p>
+</div>
+<script type="module">
+import { auth, signInWithEmailAndPassword, googleLogin, initHeader, friendly } from "./app.js";
+initHeader();
+const err = document.getElementById("err");
+const done = () => location.href = "index.html";
+document.getElementById("go").onclick = async () => {
+  err.textContent = "";
+  try { await signInWithEmailAndPassword(auth, email.value.trim(), pw.value); done(); }
+  catch (e) { err.textContent = friendly(e); }
+};
+document.getElementById("g").onclick = async () => {
+  err.textContent = "";
+  try { await googleLogin(); done(); } catch (e) { err.textContent = friendly(e); }
+};
+</script>
+</body>
+</html>

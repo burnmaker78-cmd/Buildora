@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your avatar - Buildora</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><a class="logo" href="index.html">Buildora</a><nav id="nav"></nav></header>
+<div class="editor">
+  <div class="preview" id="prev"></div>
+  <div class="opts">
+    <h1 style="margin:0">Your avatar</h1>
+    <h3>Skin</h3><div id="skin"></div>
+    <h3>Hair</h3><div id="hair"></div>
+    <h3>Shirt</h3><div id="shirt"></div>
+    <h3>Hat</h3><div id="hat"></div>
+    <button class="main" id="save">Save avatar</button>
+    <p class="err" id="msg" role="status"></p>
+  </div>
+</div>
+<script type="module">
+import { auth, db, onAuthStateChanged, doc, setDoc, getAvatar, avatarSVG, initHeader, DEFAULT_AVATAR } from "./app.js";
+initHeader();
+const OPTS = {
+  skin: ["#f1c27d", "#ffdbac", "#e0ac69", "#c68642", "#8d5524"],
+  hair: ["#3b2a1a", "#111111", "#c9a227", "#b5441b", "#7b7b7b", "#3da5ff"],
+  shirt: ["#3da5ff", "#e63946", "#3fbf6b", "#ffd23f", "#9b5de5", "#1b2a41"],
+  hat: ["none", "cap", "crown"]
+};
+let av = { ...DEFAULT_AVATAR }, uid = null;
+const prev = document.getElementById("prev"), msg = document.getElementById("msg");
+
+function draw() {
+  prev.innerHTML = avatarSVG(av);
+  for (const key in OPTS) {
+    const box = document.getElementById(key);
+    box.innerHTML = "";
+    OPTS[key].forEach(v => {
+      const b = document.createElement("button");
+      b.className = key === "hat" ? "sw txt" : "sw";
+      b.setAttribute("aria-label", key + " " + v);
+      if (key === "hat") b.textContent = v === "none" ? "None" : v[0].toUpperCase() + v.slice(1);
+      else b.style.background = v;
+      if (av[key] === v) b.classList.add("on");
+      b.onclick = () => { av[key] = v; draw(); };
+      box.appendChild(b);
+    });
+  }
+}
+draw();
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = "login.html"; return; }
+  uid = user.uid;
+  av = await getAvatar(uid);
+  draw();
+});
+
+document.getElementById("save").onclick = async () => {
+  if (!uid) return;
+  try { await setDoc(doc(db, "users", uid), { avatar: av }, { merge: true }); msg.textContent = "Saved!"; }
+  catch (e) { msg.textContent = "Couldn’t save. Check your Firestore rules."; }
+};
+</script>
+</body>
+</html>
