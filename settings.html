@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings - Buildora</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="panel" style="max-width:520px">
+  <h1>Settings</h1>
+  <p id="setupNote" class="err" hidden>Choose a username to finish setting up your account.</p>
+
+  <section>
+    <label for="uname">Username</label>
+    <input id="uname" maxlength="20" autocomplete="off">
+    <p class="or" style="text-align:left;margin:6px 0 0" id="uhint">Usernames can’t be changed, so pick carefully. Don’t use your real name.</p>
+    <p class="err" id="uerr" role="alert"></p>
+    <button class="main" id="claim" style="margin-top:0">Claim username</button>
+  </section>
+
+  <section>
+    <label for="dname" style="margin-top:24px">Display name</label>
+    <input id="dname" maxlength="20">
+    <p class="err" id="derr" role="alert"></p>
+    <button class="main" id="saveD" style="margin-top:0">Save display name</button>
+  </section>
+</div>
+<script type="module">
+import { auth, db, onAuthStateChanged, updateProfile, doc, getDoc, setDoc, getProfile, initHeader, say, friendly, validUser, claimUsername } from "./app.js";
+initHeader();
+const $ = id => document.getElementById(id);
+let me = null;
+
+if (new URLSearchParams(location.search).get("setup")) $("setupNote").hidden = false;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = "login.html"; return; }
+  me = user;
+  const p = await getProfile(user.uid);
+  $("dname").value = p.displayName || user.displayName || "";
+  if (p.username) {
+    $("uname").value = p.username; $("uname").disabled = true;
+    $("claim").hidden = true; $("uhint").textContent = "Usernames can’t be changed.";
+    // older accounts: make sure the name is reserved so nobody else can take it
+    try { const r = doc(db, "usernames", p.username); if (!(await getDoc(r)).exists()) await setDoc(r, { uid: user.uid }); } catch (e) {}
+  }
+});
+
+$("claim").onclick = async () => {
+  $("uerr").textContent = "";
+  const name = $("uname").value.trim().toLowerCase();
+  if (!validUser(name)) { $("uerr").textContent = "3 to 20 letters, numbers or underscores."; return; }
+  try {
+    await claimUsername(me.uid, name);
+    say("Username claimed!");
+    setTimeout(() => location.href = "index.html", 700);
+  } catch (e) { $("uerr").textContent = friendly(e); }
+};
+
+$("saveD").onclick = async () => {
+  $("derr").textContent = "";
+  const n = $("dname").value.trim();
+  if (n.length < 2) { $("derr").textContent = "Display name needs at least 2 characters."; return; }
+  try {
+    await updateProfile(me, { displayName: n });
+    await setDoc(doc(db, "users", me.uid), { displayName: n }, { merge: true });
+    say("Saved!");
+    setTimeout(() => location.reload(), 600);
+  } catch (e) { $("derr").textContent = friendly(e); }
+};
+</script>
+</body>
+</html>

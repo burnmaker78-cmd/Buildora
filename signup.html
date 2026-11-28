@@ -8,12 +8,13 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header><a class="logo" href="index.html">Buildora</a><nav id="nav"></nav></header>
 <div class="panel">
   <h1>Make an account</h1>
-  <label for="user">Username (don’t use your real name)</label><input id="user" maxlength="20" autocomplete="nickname">
+  <label for="user">Username (can’t be changed later)</label><input id="user" maxlength="20" autocomplete="username">
+  <label for="display">Display name (you can change this anytime)</label><input id="display" maxlength="20" placeholder="Same as username if empty">
   <label for="email">Email</label><input id="email" type="email" autocomplete="email">
   <label for="pw">Password (6+ characters)</label><input id="pw" type="password" autocomplete="new-password">
+  <p class="or" style="text-align:left;margin:8px 0 0">Don’t use your real name.</p>
   <p class="err" id="err" role="alert"></p>
   <button class="main" id="go">Sign up</button>
   <p class="or">or</p>
@@ -21,23 +22,27 @@
   <p class="or">Have an account? <a href="login.html">Log in</a></p>
 </div>
 <script type="module">
-import { auth, db, createUserWithEmailAndPassword, updateProfile, doc, setDoc, googleLogin, initHeader, friendly, DEFAULT_AVATAR } from "./app.js";
+import { auth, db, createUserWithEmailAndPassword, updateProfile, doc, setDoc, googleLogin, initHeader, friendly, DEFAULT_AVATAR, validUser, usernameTaken, claimUsername } from "./app.js";
 initHeader();
 const err = document.getElementById("err");
 document.getElementById("go").onclick = async () => {
   err.textContent = "";
-  const name = user.value.trim();
-  if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) { err.textContent = "Username: 3 to 20 letters, numbers or underscores."; return; }
+  const name = user.value.trim().toLowerCase();
+  if (!validUser(name)) { err.textContent = "Username: 3 to 20 letters, numbers or underscores."; return; }
+  const dn = (display.value.trim() || name).slice(0, 20);
   try {
+    if (await usernameTaken(name)) { err.textContent = friendly({ code: "app/username-taken" }); return; }
     const cred = await createUserWithEmailAndPassword(auth, email.value.trim(), pw.value);
-    await updateProfile(cred.user, { displayName: name });
-    await setDoc(doc(db, "users", cred.user.uid), { username: name, avatar: DEFAULT_AVATAR });
+    await updateProfile(cred.user, { displayName: dn });
+    await setDoc(doc(db, "users", cred.user.uid), { displayName: dn, avatar: DEFAULT_AVATAR });
+    try { await claimUsername(cred.user.uid, name); }
+    catch (e) { location.href = "settings.html?setup=1"; return; }
     location.href = "avatar.html";
   } catch (e) { err.textContent = friendly(e); }
 };
 document.getElementById("g").onclick = async () => {
   err.textContent = "";
-  try { await googleLogin(); location.href = "avatar.html"; } catch (e) { err.textContent = friendly(e); }
+  try { await googleLogin(); location.href = "index.html"; } catch (e) { err.textContent = friendly(e); }
 };
 </script>
 </body>

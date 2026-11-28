@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buildora</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <h1>Home</h1>
+  <section id="friendsSec" hidden>
+    <h2 style="margin-top:0">Friends (0)</h2>
+    <div class="frow"><div class="fr"><button class="add" id="addf" aria-label="Add friends">+</button>Add Friends</div><span class="hint">Friends are coming soon.</span></div>
+  </section>
+  <section class="banner">
+    <h2>Steal a Town</h2>
+    <p>Build a town, earn money, and raid your friends’ towns.</p>
+    <a class="pbtn" href="#" id="featBtn">Play</a>
+  </section>
+  <h2 id="games">Games</h2>
+  <div class="grid" id="grid"></div>
+</div>
+<script type="module">
+import { initHeader, auth, onAuthStateChanged, say } from "./app.js";
+initHeader();
+
+// EDIT THIS LIST to add games. url = the website where that game lives ("" = coming soon).
+const GAMES = [
+  { name: "Steal a Town", desc: "Build a town and raid others.", emoji: "🏘️", bg: "#bde8c8", url: "" },
+  { name: "Game 2", desc: "Your next idea goes here.", emoji: "🎲", bg: "#ffe9a6", url: "" },
+  { name: "Game 3", desc: "Your next idea goes here.", emoji: "🚀", bg: "#c6e3ff", url: "" }
+];
+const grid = document.getElementById("grid");
+const cards = GAMES.map(g => {
+  const ready = g.url && g.url.trim() !== "";
+  const a = document.createElement("a");
+  a.className = "card" + (ready ? "" : " soon");
+  a.href = ready ? g.url : "#";
+  a.innerHTML = '<div class="thumb" style="background:' + g.bg + '">' + g.emoji + '</div><div class="body"><h3></h3><p></p><span class="tag">' + (ready ? "Play" : "Coming soon") + '</span></div>';
+  a.querySelector("h3").textContent = g.name;
+  a.querySelector("p").textContent = g.desc;
+  if (!ready) a.addEventListener("click", e => { e.preventDefault(); say(g.name + " isn’t ready yet."); });
+  grid.appendChild(a);
+  return { g, a };
+});
+
+const feat = document.getElementById("featBtn");
+if (GAMES[0].url) feat.href = GAMES[0].url;
+else feat.onclick = e => { e.preventDefault(); say(GAMES[0].name + " isn’t ready yet."); };
+document.getElementById("addf").onclick = () => say("Friends are coming soon.");
+
+const search = document.getElementById("search");
+const filter = () => cards.forEach(c => c.a.style.display = c.g.name.toLowerCase().includes(search.value.trim().toLowerCase()) ? "" : "none");
+search.addEventListener("input", filter); filter();
+
+onAuthStateChanged(auth, u => document.getElementById("friendsSec").hidden = !u);
+</script>
+</body>
+</html>
